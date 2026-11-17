@@ -2,10 +2,6 @@
 
 This chart deploys the Drill4J admin API, UI, and optionally PostgreSQL.
 
-## Publishing
-
-Run the `publish-helm-chart` workflow manually, optionally specifying a version such as `v1.2.3` or `v1.2.3-rc.1`. The workflow creates the tag if it does not exist, publishes the chart to `oci://ghcr.io/drill4j`, and attaches the same chart archive to a GitHub release. An existing tag must point to the selected commit. Versions with a prerelease suffix create a prerelease.
-
 ## Deployment
 
 Run Helm commands from the repository's `helm` directory. Choose the deployment guide that matches your environment; `values-local.yaml` is for development only.
