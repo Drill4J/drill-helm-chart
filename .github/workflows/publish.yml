@@ -78,9 +78,9 @@ jobs:
 
       - name: Login to GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | \
+          echo "${{ secrets.GH_CONTAINER_REGISTRY_TOKEN }}" | \
           helm registry login ghcr.io \
-            --username ${{ github.actor }} \
+            --username ${{ secrets.GH_CONTAINER_REGISTRY_USERNAME }} \
             --password-stdin
 
       - name: Push
@@ -88,23 +88,23 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
 
-      - name: Publish GitHub release
+      - name: Create GitHub release
+        id: create-release
+        uses: actions/create-release@v1
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.version.outputs.tag }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null; then
-            gh release upload "$TAG" "drill-$VERSION.tgz" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            prerelease=()
-            if [[ "$VERSION" == *-* ]]; then
-              prerelease+=(--prerelease)
-            fi
-            gh release create "$TAG" "drill-$VERSION.tgz" \
-              --repo "$GITHUB_REPOSITORY" \
-              --verify-tag \
-              --title "Release $TAG" \
-              --notes "Helm chart $VERSION" \
-              "${prerelease[@]}"
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          release_name: Release ${{ steps.version.outputs.tag }}
+          body: Helm chart ${{ steps.version.outputs.version }}
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+
+      - name: Upload chart to GitHub release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: drill-${{ steps.version.outputs.version }}.tgz
+          asset_name: drill-${{ steps.version.outputs.version }}.tgz
+          asset_content_type: application/gzip
